@@ -120,9 +120,10 @@ const dom = {
   showBankDetails: document.getElementById('showBankDetails'),
 
   // Quick Action Buttons
+  btnSampleDara: document.getElementById('btnSampleDara'),
+  btnSampleShirdi: document.getElementById('btnSampleShirdi'),
   btnNewInvoice: document.getElementById('btnNewInvoice'),
   btnPrint: document.getElementById('btnPrint'),
-  btnDownloadPDF: document.getElementById('btnDownloadPDF'),
 
   // In-form Summary Elements
   formSubtotal: document.getElementById('formSubtotal'),
@@ -251,13 +252,18 @@ function setupEventListeners() {
     updateCalculationsAndPrintPaper();
   });
 
-  // Reset / Clear New Bill
+  // Samples & Clear
+  if (dom.btnSampleDara) dom.btnSampleDara.addEventListener('click', loadSampleDara);
+  if (dom.btnSampleShirdi) dom.btnSampleShirdi.addEventListener('click', loadSampleShirdi);
   dom.btnNewInvoice.addEventListener('click', resetNewInvoice);
 
-  // Print & PDF
-  dom.btnPrint.addEventListener('click', () => window.print());
-  dom.btnModalPrint.addEventListener('click', () => window.print());
-  dom.btnDownloadPDF.addEventListener('click', downloadPDF);
+  // Print & Save as PDF
+  const triggerPrint = () => {
+    updateCalculationsAndPrintPaper();
+    window.print();
+  };
+  dom.btnPrint.addEventListener('click', triggerPrint);
+  dom.btnModalPrint.addEventListener('click', triggerPrint);
 
   // Modal Preview
   dom.btnPreviewModal.addEventListener('click', openPreviewModal);
@@ -539,26 +545,10 @@ function updateCalculationsAndPrintPaper() {
 }
 
 // =============================================================================
-// MODAL PREVIEW (OPTIONAL INSPECTION)
+// MODAL PREVIEW (NATURAL, 100% WHITE, FULL INVOICE DISPLAY)
 // =============================================================================
 function openPreviewModal() {
   updateCalculationsAndPrintPaper();
-  dom.modalSheetScroll.innerHTML = '';
-  const clone = dom.invoicePaper.cloneNode(true);
-  clone.id = 'modalClonedPaper';
-  clone.style.margin = '0 auto';
-  clone.style.boxShadow = '0 10px 25px rgba(0,0,0,0.3)';
-  
-  const screenW = Math.min(window.innerWidth - 32, 800);
-  const a4W = 794;
-  if (screenW < a4W) {
-    const scale = (screenW / a4W);
-    clone.style.transformOrigin = 'top center';
-    clone.style.transform = `scale(${scale})`;
-    clone.style.marginBottom = `-${(1 - scale) * 1123}px`;
-  }
-
-  dom.modalSheetScroll.appendChild(clone);
   dom.previewModal.classList.add('active');
   document.body.style.overflow = 'hidden';
 }
@@ -569,63 +559,70 @@ function closePreviewModal() {
 }
 
 // =============================================================================
-// DIRECT PDF DOWNLOAD
+// TEST SAMPLES & CLEAR
 // =============================================================================
-async function downloadPDF() {
-  updateCalculationsAndPrintPaper();
-  const filename = `${(state.billNo || 'bill').replace(/[/\\?%*:|"<>]/g, '_')}.pdf`;
-
-  const originalText = dom.btnDownloadPDF.innerHTML;
-  dom.btnDownloadPDF.disabled = true;
-  dom.btnDownloadPDF.innerHTML = '⏳ Generating PDF...';
-
-  try {
-    if (typeof html2pdf !== 'undefined') {
-      dom.printContainer.style.position = 'fixed';
-      dom.printContainer.style.left = '0';
-      dom.printContainer.style.top = '0';
-      dom.printContainer.style.zIndex = '99999';
-      dom.printContainer.style.opacity = '1';
-
-      const opt = {
-        margin: [5, 5, 5, 5],
-        filename: filename,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          scrollY: 0
-        },
-        jsPDF: {
-          unit: 'mm',
-          format: 'a4',
-          orientation: 'portrait'
-        }
-      };
-
-      await html2pdf().set(opt).from(dom.invoicePaper).save();
-    } else {
-      window.print();
+function loadSampleDara() {
+  state.billType = 'standard';
+  state.customer = {
+    name: 'M/S DARA MINERALS PRIVATE LIMITED',
+    address: 'Plot No. 74, Road No.2,APIIC IALA,\nAganampudi ,Visakhapatnam,\nAndhraPradesh – 530053.',
+    gst: '37AAMCD0296Q1ZV'
+  };
+  state.billNo = '07/DM-SSVLT/(2026-2027)';
+  state.billDate = getTodayISODate();
+  state.subject = 'submission of transportation bill (Loading from Aganampudi to Cwc cfs Ton Bags)';
+  state.items = [
+    {
+      date: getTodayISODate(),
+      vehicleNo: 'AP39TA2862',
+      from: 'Aganampudi',
+      to: 'Cwc cfs',
+      containerNo: '',
+      size: '',
+      amount: 9500
     }
-  } catch (err) {
-    console.error('PDF error:', err);
-    window.print();
-  } finally {
-    dom.printContainer.style.position = 'fixed';
-    dom.printContainer.style.left = '-9999px';
-    dom.printContainer.style.top = '0';
-    dom.printContainer.style.zIndex = 'auto';
-    dom.printContainer.style.opacity = '0';
+  ];
+  state.enableWeighment = true;
+  state.weighmentCharges = 200;
+  state.showStamp = true;
+  state.showBankDetails = true;
 
-    dom.btnDownloadPDF.disabled = false;
-    dom.btnDownloadPDF.innerHTML = originalText;
-  }
+  syncFormFromState();
+  renderItemsEditor();
+  updateCalculationsAndPrintPaper();
 }
 
-// =============================================================================
-// RESET / CLEAR NEW INVOICE
-// =============================================================================
+function loadSampleShirdi() {
+  state.billType = 'container';
+  state.customer = {
+    name: 'M/S SHIRDI SAI SHIPPING PRIVATE LIMITED',
+    address: 'Door No. 22-1-52, Kotha Agraharam Veedhi,\nChangalaraopeta,Visakhapatnam,\nAndhra Pradesh - 530001.',
+    gst: '37AAUCS9164Q1ZZ'
+  };
+  state.billNo = '13/SSSPL-SSVLT/(2026-2027)';
+  state.billDate = getTodayISODate();
+  state.subject = 'Submission of bills (Export 01X20\')';
+  state.items = [
+    {
+      date: getTodayISODate(),
+      vehicleNo: 'AP31TB8466',
+      from: 'SRAVAN 2',
+      to: 'DUVVADA',
+      containerNo: 'MEDU 6967921',
+      size: "20'",
+      amount: 8000
+    }
+  ];
+  state.enableWeighment = false;
+  state.weighmentCharges = '';
+  state.showStamp = true;
+  state.showBankDetails = true;
+
+  syncFormFromState();
+  renderItemsEditor();
+  updateCalculationsAndPrintPaper();
+}
+
 function resetNewInvoice() {
   state.billType = 'standard';
   state.customer = { name: '', address: '', gst: '' };
