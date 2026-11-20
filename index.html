@@ -200,108 +200,114 @@
         <span class="dock-amount" id="dockTotalAmount">₹0</span>
       </div>
       <div class="dock-buttons">
-        <button type="button" class="btn btn-secondary" id="btnPreviewModal" title="View bill before printing">
+        <button type="button" class="btn btn-secondary" id="btnPreviewModal" title="Preview original invoice layout">
           👁️ Preview Bill
         </button>
-        <button type="button" class="btn btn-primary" id="btnPrint" title="Print or Save as PDF">
-          🖨️ Print / Save as PDF
+        <button type="button" class="btn btn-success" id="btnDownloadPDF" title="Download completed PDF bill">
+          📥 Download PDF
         </button>
       </div>
     </div>
   </footer>
 
-  <!-- MODAL: INVOICE PREVIEW & ACTUAL RENDER CONTAINER -->
+  <!-- MODAL: ORIGINAL PROPORTIONAL PREVIEW -->
   <div id="previewModal" class="modal-overlay">
     <div class="modal-card">
       <div class="modal-top">
-        <h3>Invoice Preview</h3>
+        <h3>Invoice Preview (Exact A4 Original)</h3>
         <div class="modal-actions">
-          <button type="button" class="btn btn-sm btn-primary" id="btnModalPrint">🖨️ Print</button>
+          <button type="button" class="btn btn-sm btn-outline-white" id="btnModalZoom">🔍 Zoom 100%</button>
+          <button type="button" class="btn btn-sm btn-success" id="btnModalDownload">📥 Download PDF</button>
           <button type="button" class="btn-close" id="btnCloseModal">&times;</button>
         </div>
       </div>
       <div class="modal-sheet-scroll" id="modalSheetScroll">
-        
-        <!-- THE SINGLE SOURCE INVOICE SHEET (Used for Preview, Print & PDF) -->
-        <div class="a4-sheet" id="invoicePaper">
-          
-          <!-- TOP LETTERHEAD -->
-          <div class="invoice-letterhead">
-            <img src="assets/letterhead.webp" alt="A. SUJATHA Letterhead" class="letterhead-img" onerror="this.src='assets/letterhead_clean.png'">
+        <!-- Exact scaled A4 sheet is injected here on click -->
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       ALWAYS-RENDERED EXACT 794px A4 SHEET (Zero distortion, 100% visible to PDF generator)
+       ========================================================================= -->
+  <div class="invoice-render-wrapper" id="invoiceRenderWrapper">
+    <div class="a4-sheet" id="invoicePaper">
+      
+      <!-- TOP LETTERHEAD -->
+      <div class="invoice-letterhead">
+        <img src="assets/letterhead_clean.png" alt="A. SUJATHA Letterhead" class="letterhead-img">
+      </div>
+
+      <!-- INVOICE META ROW -->
+      <div class="bill-meta-section">
+        <div class="bill-no-date">
+          <div class="bill-no-line"><strong>BILL NO- <span id="outBillNo">---</span></strong></div>
+          <div class="bill-date-line"><strong>Date : <span id="outBillDate">---</span></strong></div>
+        </div>
+
+        <div class="billing-customer-block">
+          <div class="customer-heading">Billing Customer:</div>
+          <div class="customer-name" id="outCustomerName"></div>
+          <div class="customer-address" id="outCustomerAddress"></div>
+          <div class="customer-gst" id="outCustomerGST"></div>
+        </div>
+
+        <div class="bill-subject-block" id="outSubjectBlock" style="display: none;">
+          <strong>SUB ;<span id="outSubject"></span></strong>
+        </div>
+      </div>
+
+      <!-- BILL TABLE -->
+      <div class="invoice-table-section">
+        <table class="bill-table" id="outTable">
+          <thead id="outTableHead"></thead>
+          <tbody id="outTableBody"></tbody>
+        </table>
+
+        <!-- STANDARD BILL TOTALS (RIGHT-ALIGNED) -->
+        <div class="standard-totals-box" id="outStandardTotals">
+          <div class="total-line">
+            <span class="label">AMOUNT =</span>
+            <span class="val" id="outSubtotal">0 /-</span>
           </div>
-
-          <!-- INVOICE META ROW -->
-          <div class="bill-meta-section">
-            <div class="bill-no-date">
-              <div class="bill-no-line"><strong>BILL NO- <span id="outBillNo">---</span></strong></div>
-              <div class="bill-date-line"><strong>Date : <span id="outBillDate">---</span></strong></div>
-            </div>
-
-            <div class="billing-customer-block">
-              <div class="customer-heading">Billing Customer:</div>
-              <div class="customer-name" id="outCustomerName"></div>
-              <div class="customer-address" id="outCustomerAddress"></div>
-              <div class="customer-gst" id="outCustomerGST"></div>
-            </div>
-
-            <div class="bill-subject-block" id="outSubjectBlock" style="display: none;">
-              <strong>SUB ;<span id="outSubject"></span></strong>
-            </div>
+          <div class="total-line" id="outWeighmentRow" style="display: none;">
+            <span class="label">Weighment Charges =</span>
+            <span class="val" id="outWeighment">0 /-</span>
           </div>
-
-          <!-- BILL TABLE -->
-          <div class="invoice-table-section">
-            <table class="bill-table" id="outTable">
-              <thead id="outTableHead"></thead>
-              <tbody id="outTableBody"></tbody>
-            </table>
-
-            <!-- STANDARD BILL TOTALS (RIGHT-ALIGNED) -->
-            <div class="standard-totals-box" id="outStandardTotals">
-              <div class="total-line">
-                <span class="label">AMOUNT =</span>
-                <span class="val" id="outSubtotal">0 /-</span>
-              </div>
-              <div class="total-line" id="outWeighmentRow" style="display: none;">
-                <span class="label">Weighment Charges =</span>
-                <span class="val" id="outWeighment">0 /-</span>
-              </div>
-              <div class="total-line grand-total">
-                <span class="label">Total Amount =</span>
-                <span class="val" id="outGrandTotal">0 /-</span>
-              </div>
-            </div>
+          <div class="total-line grand-total">
+            <span class="label">Total Amount =</span>
+            <span class="val" id="outGrandTotal">0 /-</span>
           </div>
+        </div>
+      </div>
 
-          <!-- AMOUNT IN WORDS -->
-          <div class="amount-in-words-section">
-            <strong>Amount in words ; <span id="outAmountInWords">Zero Rupees Only</span></strong>
-          </div>
+      <!-- AMOUNT IN WORDS -->
+      <div class="amount-in-words-section">
+        <strong>Amount in words ; <span id="outAmountInWords">Zero Rupees Only</span></strong>
+      </div>
 
-          <!-- FOOTER: BANK DETAILS & STAMP -->
-          <div class="invoice-footer-section">
-            <div class="bank-details-box" id="outBankBox">
-              <div class="bank-title">Bank Details:</div>
-              <div class="bank-name-owner">A. SUJATHA</div>
-              <div class="bank-name">KVB BANK</div>
-              <div class="bank-acc">A/C. No. 1417135000002944</div>
-              <div class="bank-ifsc">IFSC Code: KVBL0001472</div>
-              <div class="bank-type">Account Type: CURRENT</div>
-              <div class="bank-branch">Gajuwaka Branch</div>
-            </div>
+      <!-- FOOTER: BANK DETAILS & STAMP -->
+      <div class="invoice-footer-section">
+        <div class="bank-details-box" id="outBankBox">
+          <div class="bank-title">Bank Details:</div>
+          <div class="bank-name-owner">A. SUJATHA</div>
+          <div class="bank-name">KVB BANK</div>
+          <div class="bank-acc">A/C. No. 1417135000002944</div>
+          <div class="bank-ifsc">IFSC Code: KVBL0001472</div>
+          <div class="bank-type">Account Type: CURRENT</div>
+          <div class="bank-branch">Gajuwaka Branch</div>
+        </div>
 
-            <div class="stamp-box" id="outStampBox">
-              <img src="assets/stamp.webp" alt="A. Sujatha Seal & Signature" class="stamp-img" onerror="this.src='assets/stamp_clean.png'">
-            </div>
-          </div>
+        <div class="stamp-box" id="outStampBox">
+          <img src="assets/stamp_clean.png" alt="A. Sujatha Seal & Signature" class="stamp-img">
+        </div>
+      </div>
 
-        </div><!-- /#invoicePaper -->
+    </div><!-- /#invoicePaper -->
+  </div><!-- /#invoiceRenderWrapper -->
 
-      </div><!-- /#modalSheetScroll -->
-    </div><!-- /.modal-card -->
-  </div><!-- /#previewModal -->
-
-  <!-- APP LOGIC -->
+  <!-- LIBRARIES -->
+  <script src="assets/html2pdf.bundle.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

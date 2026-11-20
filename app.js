@@ -123,7 +123,7 @@ const dom = {
   btnSampleDara: document.getElementById('btnSampleDara'),
   btnSampleShirdi: document.getElementById('btnSampleShirdi'),
   btnNewInvoice: document.getElementById('btnNewInvoice'),
-  btnPrint: document.getElementById('btnPrint'),
+  btnDownloadPDF: document.getElementById('btnDownloadPDF'),
 
   // In-form Summary Elements
   formSubtotal: document.getElementById('formSubtotal'),
@@ -137,11 +137,12 @@ const dom = {
   btnPreviewModal: document.getElementById('btnPreviewModal'),
   previewModal: document.getElementById('previewModal'),
   btnCloseModal: document.getElementById('btnCloseModal'),
-  btnModalPrint: document.getElementById('btnModalPrint'),
+  btnModalZoom: document.getElementById('btnModalZoom'),
+  btnModalDownload: document.getElementById('btnModalDownload'),
   modalSheetScroll: document.getElementById('modalSheetScroll'),
 
-  // Offscreen Print Invoice Paper
-  printContainer: document.getElementById('printContainer'),
+  // Offscreen Print & PDF Invoice Paper
+  invoiceRenderWrapper: document.getElementById('invoiceRenderWrapper'),
   invoicePaper: document.getElementById('invoicePaper'),
   outBillNo: document.getElementById('outBillNo'),
   outBillDate: document.getElementById('outBillDate'),
@@ -255,21 +256,27 @@ function setupEventListeners() {
   // Samples & Clear
   if (dom.btnSampleDara) dom.btnSampleDara.addEventListener('click', loadSampleDara);
   if (dom.btnSampleShirdi) dom.btnSampleShirdi.addEventListener('click', loadSampleShirdi);
-  dom.btnNewInvoice.addEventListener('click', resetNewInvoice);
+  if (dom.btnNewInvoice) dom.btnNewInvoice.addEventListener('click', resetNewInvoice);
 
-  // Print & Save as PDF
-  const triggerPrint = () => {
-    updateCalculationsAndPrintPaper();
-    window.print();
-  };
-  dom.btnPrint.addEventListener('click', triggerPrint);
-  dom.btnModalPrint.addEventListener('click', triggerPrint);
+  // PDF Downloads (Direct 1-page download)
+  if (dom.btnDownloadPDF) dom.btnDownloadPDF.addEventListener('click', downloadPDF);
+  if (dom.btnModalDownload) dom.btnModalDownload.addEventListener('click', downloadPDF);
 
-  // Modal Preview
-  dom.btnPreviewModal.addEventListener('click', openPreviewModal);
-  dom.btnCloseModal.addEventListener('click', closePreviewModal);
-  dom.previewModal.addEventListener('click', (e) => {
-    if (e.target === dom.previewModal) closePreviewModal();
+  // Modal Preview & Zoom
+  if (dom.btnPreviewModal) dom.btnPreviewModal.addEventListener('click', openPreviewModal);
+  if (dom.btnCloseModal) dom.btnCloseModal.addEventListener('click', closePreviewModal);
+  if (dom.btnModalZoom) dom.btnModalZoom.addEventListener('click', toggleModalZoom);
+  if (dom.previewModal) {
+    dom.previewModal.addEventListener('click', (e) => {
+      if (e.target === dom.previewModal) closePreviewModal();
+    });
+  }
+
+  // Handle window resizing for responsive preview scaling
+  window.addEventListener('resize', () => {
+    if (dom.previewModal && dom.previewModal.classList.contains('active') && !isZoomed100) {
+      renderScaledPreview();
+    }
   });
 }
 
@@ -545,17 +552,185 @@ function updateCalculationsAndPrintPaper() {
 }
 
 // =============================================================================
-// MODAL PREVIEW (NATURAL, 100% WHITE, FULL INVOICE DISPLAY)
+// MODAL PREVIEW (PROPORTIONALLY SCALED A4 ORIGINAL WITH ZERO COLUMN WRAPPING)
 // =============================================================================
+let isZoomed100 = false;
+
 function openPreviewModal() {
   updateCalculationsAndPrintPaper();
+  isZoomed100 = false;
+  if (dom.btnModalZoom) dom.btnModalZoom.textContent = '🔍 Zoom 100%';
+  renderScaledPreview();
   dom.previewModal.classList.add('active');
   document.body.style.overflow = 'hidden';
+}
+
+function toggleModalZoom() {
+  isZoomed100 = !isZoomed100;
+  if (dom.btnModalZoom) {
+    dom.btnModalZoom.textContent = isZoomed100 ? '🔍 Fit Screen' : '🔍 Zoom 100%';
+  }
+  renderScaledPreview();
+}
+
+function renderScaledPreview() {
+  if (!dom.modalSheetScroll || !dom.invoicePaper) return;
+
+  const clone = dom.invoicePaper.cloneNode(true);
+  clone.id = 'previewClonePaper';
+
+  dom.modalSheetScroll.innerHTML = '';
+
+  const viewport = document.createElement('div');
+  viewport.className = 'modal-preview-viewport';
+
+  const scaleWrapper = document.createElement('div');
+  scaleWrapper.className = 'preview-scale-wrapper';
+  scaleWrapper.appendChild(clone);
+
+  if (isZoomed100) {
+    scaleWrapper.style.transform = 'none';
+    scaleWrapper.style.margin = '0 auto';
+    viewport.style.height = 'auto';
+  } else {
+    // Determine available width
+    const scrollWidth = dom.modalSheetScroll.clientWidth || window.innerWidth;
+    const targetWidth = Math.max(scrollWidth - 28, 280);
+    const scale = Math.min(targetWidth / 794, 1);
+
+    scaleWrapper.style.transform = `scale(${scale})`;
+    scaleWrapper.style.transformOrigin = 'top center';
+
+    const naturalHeight = dom.invoicePaper.offsetHeight || 880;
+    viewport.style.height = `${Math.ceil(naturalHeight * scale) + 24}px`;
+  }
+
+  viewport.appendChild(scaleWrapper);
+  dom.modalSheetScroll.appendChild(viewport);
 }
 
 function closePreviewModal() {
   dom.previewModal.classList.remove('active');
   document.body.style.overflow = 'auto';
+}
+
+// =============================================================================
+// DIRECT 1-PAGE PDF DOWNLOAD (NEVER BLANK, EXACT DESKTOP/PRINT FIDELITY)
+// =============================================================================
+async function downloadPDF() {
+  updateCalculationsAndPrintPaper();
+
+  const rawBillNo = state.billNo || 'Sujatha_Bill';
+  const cleanName = rawBillNo.replace(/[/\\?%*:|"<> ]/g, '_');
+  const filename = `${cleanName}.pdf`;
+
+  const btnDock = dom.btnDownloadPDF;
+  const btnModal = dom.btnModalDownload;
+  const dockOriginal = btnDock ? btnDock.innerHTML : '';
+  const modalOriginal = btnModal ? btnModal.innerHTML : '';
+
+  if (btnDock) {
+    btnDock.disabled = true;
+    btnDock.innerHTML = '⏳ Generating PDF...';
+  }
+  if (btnModal) {
+    btnModal.disabled = true;
+    btnModal.innerHTML = '⏳ Generating PDF...';
+  }
+
+  const wrapper = dom.invoiceRenderWrapper;
+  const paper = dom.invoicePaper;
+
+  // Temporarily bring the wrapper into fixed view at top: 0, left: 0 with z-index: 999999
+  // so html2canvas renders 100% fully visible, opaque, non-blank canvas
+  const prevPosition = wrapper.style.position;
+  const prevZIndex = wrapper.style.zIndex;
+  const prevTop = wrapper.style.top;
+  const prevLeft = wrapper.style.left;
+  const prevOpacity = wrapper.style.opacity;
+  const prevVisibility = wrapper.style.visibility;
+
+  wrapper.style.position = 'fixed';
+  wrapper.style.top = '0px';
+  wrapper.style.left = '0px';
+  wrapper.style.zIndex = '999999';
+  wrapper.style.opacity = '1';
+  wrapper.style.visibility = 'visible';
+  wrapper.style.pointerEvents = 'none';
+
+  try {
+    // Ensure all images (letterhead, stamp) are fully loaded
+    const imgs = Array.from(paper.querySelectorAll('img'));
+    await Promise.all(imgs.map(img => {
+      if (img.complete && img.naturalHeight !== 0) return Promise.resolve();
+      return new Promise(resolve => {
+        img.onload = resolve;
+        img.onerror = resolve;
+      });
+    }));
+
+    if (typeof html2pdf !== 'undefined') {
+      const opt = {
+        margin: [0, 0, 0, 0],
+        filename: filename,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          scrollX: 0,
+          scrollY: 0,
+          windowWidth: 794,
+          backgroundColor: '#ffffff'
+        },
+        jsPDF: {
+          unit: 'mm',
+          format: 'a4',
+          orientation: 'portrait'
+        },
+        pagebreak: { mode: ['avoid-all'] }
+      };
+
+      await html2pdf()
+        .set(opt)
+        .from(paper)
+        .toPdf()
+        .get('pdf')
+        .then(function(pdf) {
+          // Guarantee strictly 1 single A4 page
+          const totalPages = pdf.internal.getNumberOfPages();
+          if (totalPages > 1) {
+            for (let i = totalPages; i > 1; i--) {
+              pdf.deletePage(i);
+            }
+          }
+        })
+        .save();
+    } else {
+      window.print();
+    }
+  } catch (err) {
+    console.error('PDF Download failed:', err);
+    alert('Direct PDF generation encountered an issue. Opening standard print/save dialog.');
+    window.print();
+  } finally {
+    // Restore offscreen styling
+    wrapper.style.position = prevPosition;
+    wrapper.style.zIndex = prevZIndex;
+    wrapper.style.top = prevTop;
+    wrapper.style.left = prevLeft;
+    wrapper.style.opacity = prevOpacity;
+    wrapper.style.visibility = prevVisibility;
+
+    if (btnDock) {
+      btnDock.disabled = false;
+      btnDock.innerHTML = dockOriginal;
+    }
+    if (btnModal) {
+      btnModal.disabled = false;
+      btnModal.innerHTML = modalOriginal;
+    }
+  }
 }
 
 // =============================================================================
