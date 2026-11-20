@@ -1,18 +1,18 @@
 /**
- * A. SUJATHA - BILL GENERATOR (MOBILE-FIRST)
+ * A. SUJATHA - BILL GENERATOR (FRESH / UNFILLED STATE)
  */
 
-// Application State
+// Application State - 100% Fresh
 const state = {
   billType: 'standard', // 'standard' | 'container'
   customer: {
-    name: 'M/S DARA MINERALS PRIVATE LIMITED',
-    address: 'Plot No. 74, Road No.2,APIIC IALA,\nAganampudi ,Visakhapatnam,\nAndhraPradesh – 530053.',
-    gst: '37AAMCD0296Q1ZV'
+    name: '',
+    address: '',
+    gst: ''
   },
-  billNo: `01/SSVLT/(${getCurrentFinancialYear()})`,
+  billNo: '',
   billDate: getTodayISODate(), // Defaults to Today automatically
-  subject: 'submission of transportation bill (Loading from Aganampudi to Cwc cfs Ton Bags)',
+  subject: '',
   items: [
     {
       date: getTodayISODate(), // Defaults to Today
@@ -21,11 +21,11 @@ const state = {
       to: '',
       containerNo: '',
       size: "20'",
-      amount: 0
+      amount: ''
     }
   ],
-  enableWeighment: true,
-  weighmentCharges: 200,
+  enableWeighment: false,
+  weighmentCharges: '',
   showStamp: true,
   showBankDetails: true
 };
@@ -147,6 +147,7 @@ const dom = {
   outCustomerName: document.getElementById('outCustomerName'),
   outCustomerAddress: document.getElementById('outCustomerAddress'),
   outCustomerGST: document.getElementById('outCustomerGST'),
+  outSubjectBlock: document.getElementById('outSubjectBlock'),
   outSubject: document.getElementById('outSubject'),
   outTableHead: document.getElementById('outTableHead'),
   outTableBody: document.getElementById('outTableBody'),
@@ -221,7 +222,7 @@ function setupEventListeners() {
     updateCalculationsAndPrintPaper();
   });
   dom.weighmentCharges.addEventListener('input', (e) => {
-    state.weighmentCharges = Number(e.target.value) || 0;
+    state.weighmentCharges = e.target.value;
     updateCalculationsAndPrintPaper();
   });
 
@@ -244,13 +245,13 @@ function setupEventListeners() {
       to: '',
       containerNo: '',
       size: "20'",
-      amount: 0
+      amount: ''
     });
     renderItemsEditor();
     updateCalculationsAndPrintPaper();
   });
 
-  // Reset / New Bill
+  // Reset / Clear New Bill
   dom.btnNewInvoice.addEventListener('click', resetNewInvoice);
 
   // Print & PDF
@@ -314,24 +315,24 @@ function renderItemsEditor() {
         </div>
         <div class="form-group">
           <label>Vehicle No</label>
-          <input type="text" class="form-control item-vehicle" data-index="${index}" value="${item.vehicleNo}" placeholder="AP39TA2862">
+          <input type="text" class="form-control item-vehicle" data-index="${index}" value="${item.vehicleNo}" placeholder="e.g. AP39TA2862">
         </div>
       </div>
       <div class="form-grid-2">
         <div class="form-group">
           <label>From (Origin)</label>
-          <input type="text" class="form-control item-from" data-index="${index}" value="${item.from}" placeholder="Aganampudi">
+          <input type="text" class="form-control item-from" data-index="${index}" value="${item.from}" placeholder="e.g. Aganampudi">
         </div>
         <div class="form-group">
           <label>To (Destination)</label>
-          <input type="text" class="form-control item-to" data-index="${index}" value="${item.to}" placeholder="Cwc cfs">
+          <input type="text" class="form-control item-to" data-index="${index}" value="${item.to}" placeholder="e.g. Cwc cfs">
         </div>
       </div>
       ${isContainer ? `
       <div class="form-grid-2">
         <div class="form-group">
           <label>Container No</label>
-          <input type="text" class="form-control item-container" data-index="${index}" value="${item.containerNo || ''}" placeholder="MEDU 6967921">
+          <input type="text" class="form-control item-container" data-index="${index}" value="${item.containerNo || ''}" placeholder="e.g. MEDU 6967921">
         </div>
         <div class="form-group">
           <label>Size</label>
@@ -341,7 +342,7 @@ function renderItemsEditor() {
       ` : ''}
       <div class="form-group">
         <label>Amount / Rate (₹) <span class="req">*</span></label>
-        <input type="number" class="form-control item-amount" data-index="${index}" value="${item.amount || ''}" placeholder="9500">
+        <input type="number" class="form-control item-amount" data-index="${index}" value="${item.amount}" placeholder="e.g. 9500">
       </div>
     `;
     dom.itemsContainer.appendChild(card);
@@ -403,7 +404,7 @@ function renderItemsEditor() {
 
   dom.itemsContainer.querySelectorAll('.item-amount').forEach(inp => {
     inp.addEventListener('input', (e) => {
-      state.items[Number(e.target.dataset.index)].amount = Number(e.target.value) || 0;
+      state.items[Number(e.target.dataset.index)].amount = e.target.value;
       updateCalculationsAndPrintPaper();
     });
   });
@@ -428,7 +429,7 @@ function updateCalculationsAndPrintPaper() {
     grandTotal += weighmentAmt;
   }
 
-  const words = numberToIndianWords(grandTotal);
+  const words = grandTotal > 0 ? numberToIndianWords(grandTotal) : 'Zero Rupees Only';
 
   // 1. Update in-form summary card & sticky action dock
   dom.formSubtotal.textContent = `₹${formatIndianCurrency(itemsSubtotal)}`;
@@ -440,10 +441,16 @@ function updateCalculationsAndPrintPaper() {
   // 2. Update print paper template
   dom.outBillNo.textContent = state.billNo || '---';
   dom.outBillDate.textContent = formatDateForBill(state.billDate, '.') || '---';
-  dom.outCustomerName.textContent = state.customer.name || '---';
+  dom.outCustomerName.textContent = state.customer.name || '';
   dom.outCustomerAddress.innerHTML = (state.customer.address || '').replace(/\n/g, '<br>');
   dom.outCustomerGST.textContent = state.customer.gst ? `GST NO: ${state.customer.gst}` : '';
-  dom.outSubject.textContent = state.subject || '';
+  
+  if (state.subject) {
+    dom.outSubjectBlock.style.display = 'block';
+    dom.outSubject.textContent = state.subject;
+  } else {
+    dom.outSubjectBlock.style.display = 'none';
+  }
 
   if (isContainer) {
     dom.outTableHead.innerHTML = `
@@ -471,7 +478,7 @@ function updateCalculationsAndPrintPaper() {
           <td>${item.to || ''}</td>
           <td>${item.containerNo || ''}</td>
           <td>${item.size || ''}</td>
-          <td>${formatIndianCurrency(amt)}</td>
+          <td>${amt > 0 ? formatIndianCurrency(amt) : ''}</td>
         </tr>
       `;
     });
@@ -508,7 +515,7 @@ function updateCalculationsAndPrintPaper() {
           <td>${item.vehicleNo || ''}</td>
           <td>${item.from || ''}</td>
           <td>${item.to || ''}</td>
-          <td>${formatIndianCurrency(amt)}</td>
+          <td>${amt > 0 ? formatIndianCurrency(amt) : ''}</td>
         </tr>
       `;
     });
@@ -517,7 +524,7 @@ function updateCalculationsAndPrintPaper() {
     dom.outStandardTotals.style.display = 'flex';
 
     dom.outSubtotal.textContent = `${formatIndianCurrency(itemsSubtotal)} /-`;
-    if (state.enableWeighment) {
+    if (state.enableWeighment && weighmentAmt > 0) {
       dom.outWeighmentRow.style.display = 'flex';
       dom.outWeighment.textContent = `${formatIndianCurrency(weighmentAmt)} /-`;
     } else {
@@ -617,30 +624,27 @@ async function downloadPDF() {
 }
 
 // =============================================================================
-// RESET / NEW INVOICE
+// RESET / CLEAR NEW INVOICE
 // =============================================================================
 function resetNewInvoice() {
-  const today = getTodayISODate();
-  const fy = getCurrentFinancialYear();
-
   state.billType = 'standard';
   state.customer = { name: '', address: '', gst: '' };
-  state.billNo = `01/SSVLT/(${fy})`;
-  state.billDate = today;
-  state.subject = 'submission of transportation bill';
+  state.billNo = '';
+  state.billDate = getTodayISODate();
+  state.subject = '';
   state.items = [
     {
-      date: today,
+      date: getTodayISODate(),
       vehicleNo: '',
       from: '',
       to: '',
       containerNo: '',
       size: "20'",
-      amount: 0
+      amount: ''
     }
   ];
-  state.enableWeighment = true;
-  state.weighmentCharges = 200;
+  state.enableWeighment = false;
+  state.weighmentCharges = '';
   state.showStamp = true;
   state.showBankDetails = true;
 
@@ -658,17 +662,6 @@ function getTodayISODate() {
   const month = String(now.getMonth() + 1).padStart(2, '0');
   const day = String(now.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
-}
-
-function getCurrentFinancialYear() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth() + 1;
-  if (month >= 4) {
-    return `${year}-${year + 1}`;
-  } else {
-    return `${year - 1}-${year}`;
-  }
 }
 
 document.addEventListener('DOMContentLoaded', init);

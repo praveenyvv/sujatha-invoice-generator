@@ -19,7 +19,7 @@
         </div>
       </div>
       <button type="button" class="btn btn-outline-white btn-sm" id="btnNewInvoice">
-        ➕ Reset / New Bill
+        ➕ Clear / New Bill
       </button>
     </div>
   </header>
@@ -58,7 +58,7 @@
         </div>
       </section>
 
-      <!-- 2. CUSTOMER DETAILS (DIRECT & SIMPLE) -->
+      <!-- 2. CUSTOMER DETAILS (FRESH & DIRECT) -->
       <section class="form-card">
         <div class="card-header">
           <span class="step-num">2</span>
@@ -72,7 +72,7 @@
 
         <div class="form-group">
           <label for="customerAddress">Address</label>
-          <textarea id="customerAddress" class="form-control" rows="3" placeholder="Plot No. 74, Road No.2, APIIC IALA,&#10;Aganampudi, Visakhapatnam,&#10;Andhra Pradesh - 530053."></textarea>
+          <textarea id="customerAddress" class="form-control" rows="3" placeholder="Enter customer address..."></textarea>
         </div>
 
         <div class="form-group">
@@ -91,18 +91,18 @@
         <div class="form-grid-2">
           <div class="form-group">
             <label for="billNo">Bill Number <span class="req">*</span></label>
-            <input type="text" id="billNo" class="form-control" placeholder="01/SSVLT/(2026-2027)" required>
+            <input type="text" id="billNo" class="form-control" placeholder="e.g. 01/SSVLT/(2026-2027)" required>
           </div>
 
           <div class="form-group">
-            <label for="billDate">Bill Date (Defaults to Today) <span class="req">*</span></label>
+            <label for="billDate">Bill Date <span class="req">*</span></label>
             <input type="date" id="billDate" class="form-control" required>
           </div>
         </div>
 
         <div class="form-group">
           <label for="billSubject">Subject Line</label>
-          <input type="text" id="billSubject" class="form-control" placeholder="submission of transportation bill (Loading from Aganampudi to Cwc cfs Ton Bags)">
+          <input type="text" id="billSubject" class="form-control" placeholder="e.g. submission of transportation bill">
         </div>
       </section>
 
@@ -125,12 +125,12 @@
         <!-- WEIGHMENT CHARGES (Standard Bill only) -->
         <div class="extra-charge-card" id="standardChargesGroup">
           <label class="toggle-switch">
-            <input type="checkbox" id="enableWeighment" checked>
+            <input type="checkbox" id="enableWeighment">
             <span class="toggle-label">Include Weighment Charges</span>
           </label>
-          <div class="form-group" id="weighmentInputWrapper" style="margin-top: 10px;">
+          <div class="form-group" id="weighmentInputWrapper" style="margin-top: 10px; display: none;">
             <label for="weighmentCharges">Weighment Amount (₹)</label>
-            <input type="number" id="weighmentCharges" class="form-control" value="200" step="10">
+            <input type="number" id="weighmentCharges" class="form-control" placeholder="e.g. 200" step="10">
           </div>
         </div>
       </section>
@@ -147,17 +147,17 @@
             <span>Trips Total:</span>
             <strong id="formSubtotal">₹0</strong>
           </div>
-          <div class="summary-line" id="weighmentLine">
+          <div class="summary-line" id="weighmentLine" style="display: none;">
             <span>Weighment Charges:</span>
-            <strong id="formWeighment">₹200</strong>
+            <strong id="formWeighment">₹0</strong>
           </div>
           <div class="summary-line grand-total">
             <span>Grand Total:</span>
-            <span class="total-badge" id="formGrandTotal">₹200</span>
+            <span class="total-badge" id="formGrandTotal">₹0</span>
           </div>
           <div class="words-box">
             <span class="words-label">Amount in Words:</span>
-            <div class="words-text" id="formAmountInWords">Two Hundred Rupees Only</div>
+            <div class="words-text" id="formAmountInWords">Zero Rupees Only</div>
           </div>
         </div>
       </section>
@@ -191,7 +191,7 @@
     <div class="dock-container">
       <div class="dock-summary">
         <span class="dock-label">TOTAL</span>
-        <span class="dock-amount" id="dockTotalAmount">₹200</span>
+        <span class="dock-amount" id="dockTotalAmount">₹0</span>
       </div>
       <div class="dock-buttons">
         <button type="button" class="btn btn-secondary" id="btnPreviewModal" title="View bill before downloading">
@@ -237,19 +237,19 @@
       <!-- INVOICE META ROW -->
       <div class="bill-meta-section">
         <div class="bill-no-date">
-          <div class="bill-no-line"><strong>BILL NO- <span id="outBillNo">01/SSVLT/(2026-2027)</span></strong></div>
-          <div class="bill-date-line"><strong>Date : <span id="outBillDate">14.11.2026</span></strong></div>
+          <div class="bill-no-line"><strong>BILL NO- <span id="outBillNo">---</span></strong></div>
+          <div class="bill-date-line"><strong>Date : <span id="outBillDate">---</span></strong></div>
         </div>
 
         <div class="billing-customer-block">
           <div class="customer-heading">Billing Customer:</div>
-          <div class="customer-name" id="outCustomerName">M/S DARA MINERALS PRIVATE LIMITED</div>
-          <div class="customer-address" id="outCustomerAddress">Plot No. 74, Road No.2,APIIC IALA,<br>Aganampudi ,Visakhapatnam,<br>AndhraPradesh – 530053.</div>
-          <div class="customer-gst" id="outCustomerGST">GST NO: 37AAMCD0296Q1ZV</div>
+          <div class="customer-name" id="outCustomerName"></div>
+          <div class="customer-address" id="outCustomerAddress"></div>
+          <div class="customer-gst" id="outCustomerGST"></div>
         </div>
 
-        <div class="bill-subject-block">
-          <strong>SUB ;<span id="outSubject">submission of transportation bill (Loading from Aganampudi to Cwc cfs Ton Bags)</span></strong>
+        <div class="bill-subject-block" id="outSubjectBlock">
+          <strong>SUB ;<span id="outSubject"></span></strong>
         </div>
       </div>
 
@@ -266,20 +266,20 @@
             <span class="label">AMOUNT =</span>
             <span class="val" id="outSubtotal">0 /-</span>
           </div>
-          <div class="total-line" id="outWeighmentRow">
+          <div class="total-line" id="outWeighmentRow" style="display: none;">
             <span class="label">Weighment Charges =</span>
-            <span class="val" id="outWeighment">200 /-</span>
+            <span class="val" id="outWeighment">0 /-</span>
           </div>
           <div class="total-line grand-total">
             <span class="label">Total Amount =</span>
-            <span class="val" id="outGrandTotal">200 /-</span>
+            <span class="val" id="outGrandTotal">0 /-</span>
           </div>
         </div>
       </div>
 
       <!-- AMOUNT IN WORDS -->
       <div class="amount-in-words-section">
-        <strong>Amount in words ; <span id="outAmountInWords">Two Hundred Rupees Only</span></strong>
+        <strong>Amount in words ; <span id="outAmountInWords">Zero Rupees Only</span></strong>
       </div>
 
       <!-- FOOTER: BANK DETAILS & STAMP -->
