@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>A. Sujatha - Bill Generator</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- MOBILE-FRIENDLY APP HEADER -->
+  <header class="app-header">
+    <div class="header-content">
+      <div class="brand">
+        <span class="brand-icon">🚛</span>
+        <div>
+          <h1>A. SUJATHA</h1>
+          <p>Fleet Owners & Transport Contractors</p>
+        </div>
+      </div>
+      <button type="button" class="btn btn-outline-white btn-sm" id="btnNewInvoice">
+        ➕ Reset / New Bill
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN SCROLLABLE FORM CONTAINER -->
+  <main class="app-container">
+    <form id="invoiceForm" onsubmit="event.preventDefault();">
+
+      <!-- 1. BILL TYPE -->
+      <section class="form-card">
+        <div class="card-header">
+          <span class="step-num">1</span>
+          <h2>Select Bill Format</h2>
+        </div>
+        <div class="type-selector">
+          <label class="type-card" id="typeStandardLabel">
+            <input type="radio" name="billType" value="standard" checked>
+            <div class="type-body">
+              <span class="icon">📦</span>
+              <div>
+                <strong>Standard Transport</strong>
+                <small>Bulk cargo, ton bags, general trips</small>
+              </div>
+            </div>
+          </label>
+          <label class="type-card" id="typeContainerLabel">
+            <input type="radio" name="billType" value="container">
+            <div class="type-body">
+              <span class="icon">🚢</span>
+              <div>
+                <strong>Container Shipping</strong>
+                <small>Includes Container No & Size (20'/40')</small>
+              </div>
+            </div>
+          </label>
+        </div>
+      </section>
+
+      <!-- 2. CUSTOMER DETAILS (DIRECT & SIMPLE) -->
+      <section class="form-card">
+        <div class="card-header">
+          <span class="step-num">2</span>
+          <h2>Customer Details</h2>
+        </div>
+
+        <div class="form-group">
+          <label for="customerName">Customer / Company Name <span class="req">*</span></label>
+          <input type="text" id="customerName" class="form-control" placeholder="e.g. M/S DARA MINERALS PRIVATE LIMITED" required>
+        </div>
+
+        <div class="form-group">
+          <label for="customerAddress">Address</label>
+          <textarea id="customerAddress" class="form-control" rows="3" placeholder="Plot No. 74, Road No.2, APIIC IALA,&#10;Aganampudi, Visakhapatnam,&#10;Andhra Pradesh - 530053."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="customerGST">GST Number</label>
+          <input type="text" id="customerGST" class="form-control" placeholder="e.g. 37AAMCD0296Q1ZV">
+        </div>
+      </section>
+
+      <!-- 3. BILL INFO -->
+      <section class="form-card">
+        <div class="card-header">
+          <span class="step-num">3</span>
+          <h2>Bill Information</h2>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label for="billNo">Bill Number <span class="req">*</span></label>
+            <input type="text" id="billNo" class="form-control" placeholder="01/SSVLT/(2026-2027)" required>
+          </div>
+
+          <div class="form-group">
+            <label for="billDate">Bill Date (Defaults to Today) <span class="req">*</span></label>
+            <input type="date" id="billDate" class="form-control" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="billSubject">Subject Line</label>
+          <input type="text" id="billSubject" class="form-control" placeholder="submission of transportation bill (Loading from Aganampudi to Cwc cfs Ton Bags)">
+        </div>
+      </section>
+
+      <!-- 4. TRIP DETAILS / ITEMS -->
+      <section class="form-card">
+        <div class="card-header-between">
+          <div class="card-header-title">
+            <span class="step-num">4</span>
+            <h2>Trip Details</h2>
+          </div>
+          <button type="button" id="btnAddRow" class="btn btn-outline btn-sm">
+            ➕ Add Trip
+          </button>
+        </div>
+
+        <div id="itemsContainer" class="items-list">
+          <!-- Dynamic trip cards with date pickers injected via JS -->
+        </div>
+
+        <!-- WEIGHMENT CHARGES (Standard Bill only) -->
+        <div class="extra-charge-card" id="standardChargesGroup">
+          <label class="toggle-switch">
+            <input type="checkbox" id="enableWeighment" checked>
+            <span class="toggle-label">Include Weighment Charges</span>
+          </label>
+          <div class="form-group" id="weighmentInputWrapper" style="margin-top: 10px;">
+            <label for="weighmentCharges">Weighment Amount (₹)</label>
+            <input type="number" id="weighmentCharges" class="form-control" value="200" step="10">
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. SUMMARY & TOTALS -->
+      <section class="form-card summary-card">
+        <div class="card-header">
+          <span class="step-num">5</span>
+          <h2>Total Summary</h2>
+        </div>
+
+        <div class="summary-breakdown">
+          <div class="summary-line" id="subtotalLine">
+            <span>Trips Total:</span>
+            <strong id="formSubtotal">₹0</strong>
+          </div>
+          <div class="summary-line" id="weighmentLine">
+            <span>Weighment Charges:</span>
+            <strong id="formWeighment">₹200</strong>
+          </div>
+          <div class="summary-line grand-total">
+            <span>Grand Total:</span>
+            <span class="total-badge" id="formGrandTotal">₹200</span>
+          </div>
+          <div class="words-box">
+            <span class="words-label">Amount in Words:</span>
+            <div class="words-text" id="formAmountInWords">Two Hundred Rupees Only</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. OPTIONS -->
+      <section class="form-card">
+        <div class="card-header">
+          <span class="step-num">6</span>
+          <h2>Bill Options</h2>
+        </div>
+
+        <div class="options-grid">
+          <label class="toggle-switch">
+            <input type="checkbox" id="showStamp" checked>
+            <span class="toggle-label">Include Official Seal & Signature Stamp</span>
+          </label>
+
+          <label class="toggle-switch">
+            <input type="checkbox" id="showBankDetails" checked>
+            <span class="toggle-label">Include KVB Bank Details</span>
+          </label>
+        </div>
+      </section>
+
+      <div style="height: 90px;"><!-- Bottom spacing for fixed action dock --></div>
+    </form>
+  </main>
+
+  <!-- STICKY BOTTOM ACTION DOCK (MOBILE & DESKTOP) -->
+  <footer class="bottom-action-dock">
+    <div class="dock-container">
+      <div class="dock-summary">
+        <span class="dock-label">TOTAL</span>
+        <span class="dock-amount" id="dockTotalAmount">₹200</span>
+      </div>
+      <div class="dock-buttons">
+        <button type="button" class="btn btn-secondary" id="btnPreviewModal" title="View bill before downloading">
+          👁️ Preview
+        </button>
+        <button type="button" class="btn btn-primary" id="btnPrint">
+          🖨️ Print
+        </button>
+        <button type="button" class="btn btn-success" id="btnDownloadPDF">
+          📥 Download PDF
+        </button>
+      </div>
+    </div>
+  </footer>
+
+  <!-- MODAL: OPTIONAL POPUP PREVIEW -->
+  <div id="previewModal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-top">
+        <h3>Invoice Preview</h3>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-sm btn-primary" id="btnModalPrint">🖨️ Print</button>
+          <button type="button" class="btn-close" id="btnCloseModal">&times;</button>
+        </div>
+      </div>
+      <div class="modal-sheet-scroll" id="modalSheetScroll">
+        <!-- Rendered invoice will be displayed here for user inspection -->
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       OFFSCREEN / PRINT TEMPLATE (Hidden from normal UI, used for PDF/Print)
+       ========================================================================= -->
+  <div class="print-container" id="printContainer">
+    <div class="a4-sheet" id="invoicePaper">
+      
+      <!-- TOP LETTERHEAD -->
+      <div class="invoice-letterhead">
+        <img src="assets/letterhead.webp" alt="A. SUJATHA Letterhead" class="letterhead-img" onerror="this.src='assets/letterhead_clean.png'">
+      </div>
+
+      <!-- INVOICE META ROW -->
+      <div class="bill-meta-section">
+        <div class="bill-no-date">
+          <div class="bill-no-line"><strong>BILL NO- <span id="outBillNo">01/SSVLT/(2026-2027)</span></strong></div>
+          <div class="bill-date-line"><strong>Date : <span id="outBillDate">14.11.2026</span></strong></div>
+        </div>
+
+        <div class="billing-customer-block">
+          <div class="customer-heading">Billing Customer:</div>
+          <div class="customer-name" id="outCustomerName">M/S DARA MINERALS PRIVATE LIMITED</div>
+          <div class="customer-address" id="outCustomerAddress">Plot No. 74, Road No.2,APIIC IALA,<br>Aganampudi ,Visakhapatnam,<br>AndhraPradesh – 530053.</div>
+          <div class="customer-gst" id="outCustomerGST">GST NO: 37AAMCD0296Q1ZV</div>
+        </div>
+
+        <div class="bill-subject-block">
+          <strong>SUB ;<span id="outSubject">submission of transportation bill (Loading from Aganampudi to Cwc cfs Ton Bags)</span></strong>
+        </div>
+      </div>
+
+      <!-- BILL TABLE -->
+      <div class="invoice-table-section">
+        <table class="bill-table" id="outTable">
+          <thead id="outTableHead"></thead>
+          <tbody id="outTableBody"></tbody>
+        </table>
+
+        <!-- STANDARD BILL TOTALS (RIGHT-ALIGNED) -->
+        <div class="standard-totals-box" id="outStandardTotals">
+          <div class="total-line">
+            <span class="label">AMOUNT =</span>
+            <span class="val" id="outSubtotal">0 /-</span>
+          </div>
+          <div class="total-line" id="outWeighmentRow">
+            <span class="label">Weighment Charges =</span>
+            <span class="val" id="outWeighment">200 /-</span>
+          </div>
+          <div class="total-line grand-total">
+            <span class="label">Total Amount =</span>
+            <span class="val" id="outGrandTotal">200 /-</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- AMOUNT IN WORDS -->
+      <div class="amount-in-words-section">
+        <strong>Amount in words ; <span id="outAmountInWords">Two Hundred Rupees Only</span></strong>
+      </div>
+
+      <!-- FOOTER: BANK DETAILS & STAMP -->
+      <div class="invoice-footer-section">
+        <div class="bank-details-box" id="outBankBox">
+          <div class="bank-title">Bank Details:</div>
+          <div class="bank-name-owner">A. SUJATHA</div>
+          <div class="bank-name">KVB BANK</div>
+          <div class="bank-acc">A/C. No. 1417135000002944</div>
+          <div class="bank-ifsc">IFSC Code: KVBL0001472</div>
+          <div class="bank-type">Account Type: CURRENT</div>
+          <div class="bank-branch">Gajuwaka Branch</div>
+        </div>
+
+        <div class="stamp-box" id="outStampBox">
+          <img src="assets/stamp.webp" alt="A. Sujatha Seal & Signature" class="stamp-img" onerror="this.src='assets/stamp_clean.png'">
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- LIBRARIES -->
+  <script src="assets/html2pdf.bundle.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
